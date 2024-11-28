@@ -1,0 +1,41 @@
+---
+title: "Data Exploration and Model Selection for Term Project"
+author: "Your Name"
+output:
+  bookdown::pdf_book:
+    latex_engine: lualatex
+  html_document: default
+  pdf_document: default
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{graphicx}
+  - \usepackage{caption}
+  - \usepackage{subcaption}
+  - \usepackage{listings}
+  - \usepackage{fancyvrb}
+  - \usepackage{geometry}
+  - \usepackage{hyperref}
+  - \setlength{\parskip}{1em plus 0.5em minus 0.5em}
+  - \setlength{\parindent}{0pt}
+  - \setcounter{tocdepth}{2}
+  - \setcounter{secnumdepth}{2}
+  - \hypersetup{colorlinks=true, linkcolor=blue, filecolor=magenta, urlcolor=blue}
+output:
+  pdf_document: 
+    latex_engine: lualatex
+  html_document: default
+  bookdown::pdf_book:
+    latex_engine: lualatex
+---
+
+# Data Exploration  
+```{r}
+print("Miau")
+```
+# Pre-processing  
+
+# Feature selection  
+
+# Model selection
+
+# Performance estimation
