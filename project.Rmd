@@ -1,0 +1,91 @@
+---
+title: "Group project"
+author: "Jakub Grad"
+date: "2024-11-27"
+output:
+  pdf_document: 
+    latex_engine: lualatex
+  html_document: default
+  bookdown::pdf_book:
+    latex_engine: lualatex
+header-includes:
+  - \usepackage{amsmath}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+train <- read.csv(file = "kaggle/train.csv")
+test <- read.csv(file = "kaggle/test.csv")
+
+# Select only numeric columns from 'train'
+train_numeric <- train[, sapply(train, is.numeric)]
+test_numeric <- test[, sapply(test, is.numeric)]
+
+linear_regressor <- glm(formula = log_pSat_Pa ~ ., data=train)
+test$TARGET <- predict(linear_regressor, newdata=test)
+
+submission_df <- test[, c("ID", "TARGET")]
+write.csv(submission_df, "kaggle_submission.csv", row.names = FALSE)
+```
+
+```{r, cache=TRUE}
+pairs(train[, sapply(train, is.numeric)])
+```
+
+```{r, cache=TRUE}
+# Compute the correlation matrix
+cor_matrix <- cor(train_numeric)
+
+# Create a heatmap of the correlation matrix
+heatmap(cor_matrix)
+```
+
+Ideas:
+Use cross validation before submitting?
+
+Perform Lasso?
+```{r, cache=TRUE}
+library(glmnet)
+any(is.na(train))
+
+x <- model.matrix(log_pSat_Pa ~ ., train_numeric)[,-1]
+y <- train_numeric$log_pSat_Pa
+
+grid <- 10^ seq (10,-2, length = 100)
+
+lasso.mod <- glmnet(x, y, alpha = 1, lambda = grid)
+plot(lasso.mod)
+```
+Let's find out the CV error
+```{r}
+set.seed (17)
+cv.error.100 <- rep(0, 100)
+
+cv.lasso <- cv.glmnet(x, y, alpha = 1, lambda = grid, nfolds = 10)
+
+best.lambda <- cv.lasso$lambda.min
+best.lambda
+best.coefficients <- coef(cv.lasso, s = best.lambda)
+```
+I've created a model using best coefficients from lasso and it has a lower score than without using lasso. The best lambda returned is the lowest one, implying that lasso is not the right approach. 
+```{r}
+test$TARGET <- predict(cv.lasso, newx = model.matrix(~ ., test_numeric)[,-1], s = best.lambda)
+
+submission_df <- test[, c("ID", "TARGET")]
+write.csv(submission_df, "lasso.csv", row.names = FALSE)
+```
+Mb i should plot plogsat against different other variables, see what kind of relations are there...
+random forest regression, use it, it's apparently good
+
+subset selection: best subset selection, stepwise, ridge regression. reetta suggests PCA, chapter 121
+
+model selection
+
+```{r}
+
+```
+
+

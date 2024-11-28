@@ -30,11 +30,16 @@ output:
 
 # Data Exploration  
 ```{r}
-print("Miau")
+print("Meow")
+```
+
+```{python11}
+print("Meow")
 ```
 # Pre-processing  
 
 # Feature selection  
+E.g. best subset selection, stepwise, ridge regression. reetta suggests PCA, chapter 121
 
 # Model selection
 
