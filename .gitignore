@@ -1,1 +1,9 @@
 *.csv
+
+ignore*
+
+html*
+
+kuba_exploration_in_R.html
+
+kuba_exploration_in_R_files/
