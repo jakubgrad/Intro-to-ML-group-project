@@ -38,7 +38,7 @@ pairs(train[, sapply(train, is.numeric)])
 ```{r, cache=TRUE}
 # Compute the correlation matrix
 cor_matrix <- cor(train_numeric)
-
+# 
 # Create a heatmap of the correlation matrix
 heatmap(cor_matrix)
 ```
@@ -57,8 +57,44 @@ y <- train_numeric$log_pSat_Pa
 grid <- 10^ seq (10,-2, length = 100)
 
 lasso.mod <- glmnet(x, y, alpha = 1, lambda = grid)
-plot(lasso.mod)
+plot(lasso.mod, ylab="Standardized coefficients", xlab="L1 Norm",xaxt="n",yaxt="n",axes=FALSE)
+
+coef_names <- rownames(coef(lasso.mod))[-1] # Remove the intercept term
+
+# Add a legend
+#legend("topright", legend = coef_names, col = 1:length(coef_names), lty = 1, cex = 0.6)
+significant_features <- rownames(coef(lasso.mod))[-1][1:5]  # Adjust number as needed
+
+# Add a legend for only significant features
+legend("topright", legend = significant_features, col = 1:length(significant_features), 
+       lty = 1, cex = 0.6)
 ```
+```{r}
+line_colors <- c("black",   "red",     "green3",  "blue",    "purple",  "orange", "cyan3",   "magenta")
+# Plot the Lasso path
+plot(lasso.mod, ylab = "Standardized Coefficients", xlab = "L1 Norm",col=line_colors)# main="Lasso regularization",
+title(main = "Lasso regularization", line = 2.5)
+
+# Define the top features for the legend
+important_features <- c("NumHBondDonors", "NumOfConf", "NumOfC")
+
+# Add '...' as the fourth item in the legend
+legend_items <- c(important_features, "...")
+
+# Define the line colors for the legend
+
+legend_colors <- c("blue", "green3", "red", "white")
+
+# Add the legend
+legend("topright", legend = legend_items, col = legend_colors, lty = 1, cex = 0.8)
+
+# you can kindof get rid of top axis this way.
+#> par(mar=c(5, 4, 1, 1))  # Reduce top margin to almost zero
+#> plot(lasso.mod, xvar="lambda", label=FALSE, main="miau")
+#
+```
+
+
 Let's find out the CV error
 ```{r}
 set.seed (17)
@@ -103,8 +139,13 @@ best.lambda <- cv.ridge$lambda.min
 cat("Best lambda:", best.lambda, "\n")
 ## Best lambda: 0.01
 # Plot cross-validation curve
-plot(cv.ridge)
+par(mar=c(4,4,1,4))
+plot(cv.ridge,main=expression("Cross-validation of Ridge Regression Models with Different " ~ lambda ~ " Values"))
+abline(h = 2.90325817102, col = "red", lty = 2)
 
+# Add label to the horizontal line
+
+text(x = best.lambda, y = 2.90325817102 + 0.1, labels = "CV on linear regression", pos = 4, col = "red")
 ```
 
 submission. Result is 0.7101 which is still worse than regular regression.
@@ -256,7 +297,7 @@ print(rf_model)
 importance(rf_model)
 
 ```
-
+xxxssa
 ```{r}
 varImpPlot(rf_model)
 ```
