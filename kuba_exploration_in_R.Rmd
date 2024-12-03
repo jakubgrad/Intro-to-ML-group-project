@@ -84,8 +84,191 @@ subset selection: best subset selection, stepwise, ridge regression. reetta sugg
 
 model selection
 
+What about ridge regression?
 ```{r}
+ridge.mod <- glmnet(x, y, alpha = 0, lambda = grid)
+
+plot(ridge.mod, xvar = "lambda", label = TRUE)
+```
+
+Cross-Validation for Ridge
+```{r}
+set.seed(17)
+
+# Perform cross-validation
+cv.ridge <- cv.glmnet(x, y, alpha = 0, lambda = grid, nfolds = 10)
+
+# Optimal lambda
+best.lambda <- cv.ridge$lambda.min
+cat("Best lambda:", best.lambda, "\n")
+## Best lambda: 0.01
+# Plot cross-validation curve
+plot(cv.ridge)
 
 ```
 
+submission. Result is 0.7101 which is still worse than regular regression.
+```{r}
+test$TARGET <- predict(cv.ridge, newx = model.matrix(~ ., test_numeric)[,-1], s = best.lambda)
+
+submission_df <- test[, c("ID", "TARGET")]
+write.csv(submission_df, "ridge_submission.csv", row.names = FALSE)
+```
+
+Plot plots to show correlation
+```{r}
+library(ggplot2)
+
+# Subset 1: Select a few numeric predictors
+subset_1 <- train_numeric[, c("log_pSat_Pa", "MW", "NumOfAtoms", "NumOfC", "NumOfO")]
+# Create pairwise plots for subset_1
+pairs(subset_1)
+```
+
+```{r}
+# Subset 2: Select another few predictors, focusing on other numeric and categorical features
+subset_2 <- train_numeric[, c("log_pSat_Pa", "NumOfConf", "NumHBondDonors", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring")]
+# Create pairwise plots for subset_2
+pairs(subset_2)
+```
+```{r}
+# Subset 3: A set focusing on some chemical features that may affect log_pSat_Pa
+subset_3 <- train_numeric[, c("log_pSat_Pa", "hydroxyl..alkyl.", "aldehyde", "ketone", "carboxylic.acid")]
+# Create pairwise plots for subset_3
+pairs(subset_3)
+```
+if present, is terribly unlinear. It also seems that there’s lots and lots of responses for a single input for most of the graphs.
+
+GAMs. Dont work because all variables need to have at least 4 distinct values, and this dataset sometimes has 3.
+```{r}
+# library(gam)
+# library(glmnet)
+# 
+# # Fit a GAM model (log_pSat_Pa ~ s(*) for smooth terms)
+# gam_model <- gam(log_pSat_Pa ~ s(MW, 4) + s(NumOfAtoms, 4) + s(NumOfC, 4) + s(NumOfO, 4) + s(NumOfN, 4) + ...
+```
+
+Let’s try regression trees is not doing very well by default (0.5852)
+```{r}
+
+library(rpart)
+
+# Fit a regression tree model
+regression_tree <- rpart(log_pSat_Pa ~ ., data = train_numeric, method = "anova")
+
+# View the model summary
+summary(regression_tree)
+```
+
+```{r}
+# Visualize the tree (optional, but useful for understanding the splits)
+plot(regression_tree)
+text(regression_tree, use.n = TRUE, cex = 0.7)
+```
+
+```{r}
+# Make predictions on the test data
+test$TARGET <- predict(regression_tree, newdata = test_numeric)
+
+# Create the submission dataframe
+submission_df <- test[, c("ID", "TARGET")]
+
+# Write the submission to a CSV file
+write.csv(submission_df, "regression_tree_submission.csv", row.names = FALSE)
+```
+
+Let’s try a bigger regression tree:
+```{r}
+library(tree)
+
+# Fit the regression tree with a bigger tree by passing control
+regression_tree_big <- tree(log_pSat_Pa ~ ., data = train_numeric, control = tree.control(nobs = nrow(train_numeric), mindev = 0.0005))
+
+# View the model summary
+summary(regression_tree_big)
+```
+
+```{r}
+# Visualize the tree (optional)
+plot(regression_tree_big)
+text(regression_tree_big, use.n = TRUE, cex = 0.7)
+```
+
+```{r}
+# Make predictions on the test data
+test$TARGET <- predict(regression_tree_big, newdata = test_numeric)
+
+# Create the submission dataframe
+submission_df <- test[, c("ID", "TARGET")]
+
+# Write the submission to a CSV file
+write.csv(submission_df, "regression_tree_big_submission.csv", row.names = FALSE)
+```
+
+Prune the big tree into the best tree according to CV:
+```{r}
+# Perform cross-validation to find the best pruned tree size
+cv.tree_result <- cv.tree(regression_tree_big)
+
+# Plot the cross-validation results to inspect the best tree size
+plot(cv.tree_result$size, cv.tree_result$dev, type = "b", xlab = "Tree Size (Terminal Nodes)", ylab = "Deviance")
+```
+
+```{r}
+# Find the optimal size (best pruning)
+best_size <- cv.tree_result$size[which.min(cv.tree_result$dev)]
+best_size <- 10
+best_pruned_tree <- prune.tree(regression_tree_big, best = best_size)
+
+# Visualize the best pruned tree
+plot(best_pruned_tree)
+text(best_pruned_tree, pretty = 0)
+
+```
+
+```{r}
+# Make predictions on the test data
+test$TARGET <- predict(best_pruned_tree, newdata = test_numeric)
+
+# Create the submission dataframe
+submission_df <- test[, c("ID", "TARGET")]
+
+# Write the submission to a CSV file
+write.csv(submission_df, "tree_with_10_nodes_submission.csv", row.names = FALSE)
+
+```
+
+```{r}
+library(randomForest)
+```
+
+```{r}
+# Fit a Random Forest model
+set.seed(42)  # Set a seed for reproducibility
+rf_model <- randomForest(log_pSat_Pa ~ ., data = train_numeric, ntree = 50, importance = TRUE)
+
+# Print the model summary
+print(rf_model)
+```
+
+```{r}
+# View variable importance (optional)
+importance(rf_model)
+
+```
+
+```{r}
+varImpPlot(rf_model)
+```
+
+```{r}
+# Make predictions on the test data
+test$TARGET <- predict(rf_model, newdata = test_numeric)
+
+# Create the submission dataframe
+submission_df <- test[, c("ID", "TARGET")]
+
+# Write the submission to a CSV file
+write.csv(submission_df, "random_forest_submission.csv", row.names = FALSE)
+```
 
